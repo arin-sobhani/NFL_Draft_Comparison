@@ -240,8 +240,8 @@ def main():
     all_players = player_data.get_player_names()
     all_players.sort()
     
-    # Single search bar with autocomplete-like functionality
-    search_term = st.text_input("Enter player name:", placeholder="e.g., Caleb Williams, Travis Hunter...")
+    # Single autocomplete search bar
+    search_term = st.text_input("Search players:", placeholder="Type a player name (e.g., Caleb Williams, Travis Hunter...)")
     
     # Filter players based on search term
     if search_term:
@@ -252,9 +252,9 @@ def main():
     else:
         filtered_players = all_players[:20]  # Show first 20 players when no search term
     
-    # Player selection dropdown
+    # Player selection from filtered results
     if filtered_players:
-        selected_player = st.selectbox("Select a player:", filtered_players, index=0)
+        selected_player = st.selectbox("Select from results:", filtered_players, index=0, label_visibility="collapsed")
     else:
         selected_player = None
         st.warning("No players found matching your search.")
