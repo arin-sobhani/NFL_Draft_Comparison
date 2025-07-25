@@ -249,7 +249,7 @@ def main():
     
     with col2:
         # Quick position filter
-        positions = ['All Positions'] + sorted(player_data.get_positions())
+        positions = ['All Positions'] + sorted(player_data.get_all_positions())
         selected_position = st.selectbox("Position:", positions)
     
     # Filter players based on search term and position
