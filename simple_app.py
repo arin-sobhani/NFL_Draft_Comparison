@@ -9,96 +9,169 @@ st.set_page_config(
     page_title="NFL Player Comparison Tool",
     page_icon="🏈",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for clean, modern styling
+# Custom CSS for better styling
 st.markdown("""
 <style>
     .main-header {
+        text-align: center;
+        color: #1f2937;
         font-size: 2.5rem;
         font-weight: bold;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
+    
     .sub-header {
-        font-size: 1.2rem;
-        color: #666;
         text-align: center;
+        color: #6b7280;
+        font-size: 1.1rem;
         margin-bottom: 2rem;
     }
+    
+    .search-container {
+        background: #f8fafc;
+        padding: 2rem;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+    
+    .player-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
     .player-card {
-        background-color: #f8f9fa;
-        border-radius: 10px;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
         padding: 1.5rem;
-        margin: 1rem 0;
-        border-left: 4px solid #1f77b4;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
     }
-    .similarity-score {
-        font-size: 1.1rem;
+    
+    .player-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .player-card.selected {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    
+    .player-card.similar {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    
+    .player-name {
+        font-size: 1.25rem;
         font-weight: bold;
-        color: #28a745;
-        background-color: #d4edda;
-        padding: 0.3rem 0.6rem;
-        border-radius: 15px;
-        display: inline-block;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
     }
+    
+    .player-info {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
     .stat-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 0.5rem;
-        margin-top: 1rem;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
     }
+    
     .stat-item {
-        background-color: #e9ecef;
-        padding: 0.5rem;
-        border-radius: 5px;
+        background: #f9fafb;
+        padding: 0.75rem;
+        border-radius: 8px;
         text-align: center;
     }
+    
     .stat-label {
         font-size: 0.8rem;
-        color: #666;
-        font-weight: bold;
+        color: #6b7280;
+        font-weight: 500;
+        margin-bottom: 0.25rem;
     }
+    
     .stat-value {
         font-size: 1rem;
-        color: #1f77b4;
         font-weight: bold;
+        color: #1f2937;
     }
-    .search-container {
-        background-color: white;
-        padding: 2rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-    }
-    .filter-container {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 10px;
+    
+    .similarity-score {
+        background: #3b82f6;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        text-align: center;
+        font-weight: bold;
         margin-bottom: 1rem;
+    }
+    
+    .filter-section {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        margin-top: 1rem;
+    }
+    
+    .filter-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-item {
+        flex: 1;
+    }
+    
+    .no-results {
+        text-align: center;
+        color: #6b7280;
+        font-style: italic;
+        padding: 2rem;
+    }
+    
+    .stSelectbox > div > div {
+        background: white;
+    }
+    
+    .stTextInput > div > div > input {
+        background: white;
     }
 </style>
 """, unsafe_allow_html=True)
 
 @st.cache_resource
 def load_data():
-    """Load player data and analyzer"""
+    """Load player data and similarity analyzer"""
     try:
         player_data = NFLPlayerData()
         analyzer = PlayerSimilarityAnalyzer(player_data)
         return player_data, analyzer
     except Exception as e:
-        st.error(f"Error loading data: {e}")
+        st.error(f"Failed to load data: {str(e)}")
         return None, None
 
 def format_player_name(name):
     """Format player name for display"""
+    if not name:
+        return "Unknown Player"
     return name.title()
 
-def display_player_card(player_data, title="Player", player_name=None):
+def display_player_card(player_data, title="Player", player_name=None, card_type="default"):
     """Display a player card with stats"""
     # Handle different data structures
     if player_name is None:
@@ -108,10 +181,12 @@ def display_player_card(player_data, title="Player", player_name=None):
     college = player_data.get('college', 'N/A')
     draft_year = player_data.get('draft_year', 'N/A')
     
+    card_class = f"player-card {card_type}"
+    
     st.markdown(f"""
-    <div class="player-card">
-        <h3>{title}: {format_player_name(player_name)}</h3>
-        <p><strong>Position:</strong> {position} | <strong>College:</strong> {college} | <strong>Draft Year:</strong> {draft_year}</p>
+    <div class="{card_class}">
+        <div class="player-name">{format_player_name(player_name)}</div>
+        <div class="player-info">{position} • {college} • {draft_year}</div>
         <div class="stat-grid">
     """, unsafe_allow_html=True)
     
@@ -165,158 +240,178 @@ def main():
     all_players = player_data.get_player_names()
     all_players.sort()
     
-    # Search bar with autocomplete-like functionality
-    search_term = st.text_input("Enter player name:", placeholder="e.g., Caleb Williams, Travis Hunter...")
+    # Create columns for search and filters
+    col1, col2 = st.columns([2, 1])
     
-    # Filter players based on search term
+    with col1:
+        # Search bar with autocomplete-like functionality
+        search_term = st.text_input("Enter player name:", placeholder="e.g., Caleb Williams, Travis Hunter...")
+    
+    with col2:
+        # Quick position filter
+        positions = ['All Positions'] + sorted(player_data.get_positions())
+        selected_position = st.selectbox("Position:", positions)
+    
+    # Filter players based on search term and position
     if search_term:
         filtered_players = [name for name in all_players if search_term.lower() in name.lower()]
     else:
-        filtered_players = all_players[:50]  # Show first 50 players as suggestions
+        filtered_players = all_players
+    
+    # Apply position filter
+    if selected_position != 'All Positions':
+        filtered_players = [name for name in filtered_players 
+                          if player_data.get_player_stats(name) and 
+                          player_data.get_player_stats(name)['position'] == selected_position]
+    
+    # Limit results for dropdown
+    if len(filtered_players) > 100:
+        filtered_players = filtered_players[:100]
     
     # Player selection
     if filtered_players:
         selected_player = st.selectbox("Select a player:", filtered_players, index=0 if not search_term else None)
-        
-        if selected_player:
-            # Get player stats
-            player_stats = player_data.get_player_stats(selected_player)
-            if player_stats:
-                # Display selected player
-                st.markdown("### 📊 Selected Player")
-                display_player_card(player_stats, "Selected", selected_player)
-                
-                # Find similar players
-                st.markdown("### 🔍 Finding Similar Players...")
-                with st.spinner("Analyzing player similarities..."):
-                    similar_players = analyzer.find_similar_players(
-                        selected_player, 
-                        num_similar=2, 
-                        same_position_only=True
-                    )
-                
-                if similar_players:
-                    st.markdown("### 🎯 Similar Players")
-                    for i, similar in enumerate(similar_players, 1):
-                        st.markdown(f"<div class='similarity-score'>Similarity Score: {similar['similarity_score']:.2f}</div>", unsafe_allow_html=True)
-                        display_player_card(similar['stats'], f"Similar Player {i}", similar['name'])
-                else:
-                    st.warning("No similar players found with the current criteria.")
-            else:
-                st.error("Could not load player statistics.")
-        else:
-            st.info("Please select a player to see their details and similar players.")
     else:
-        st.warning("No players found matching your search.")
+        selected_player = None
+        st.warning("No players found matching your criteria.")
     
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # Filtering and sorting section
-    st.markdown('<div class="filter-container">', unsafe_allow_html=True)
-    st.markdown("### 🔧 Advanced Search & Filtering")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        # Position filter
-        positions = ['All Positions'] + player_data.get_all_positions()
-        selected_position = st.selectbox("Position:", positions)
-    
-    with col2:
-        # Year range
-        years = list(range(2000, 2026))
-        selected_year = st.selectbox("Draft Year:", ['All Years'] + years)
-    
-    with col3:
-        # Sort by
-        sort_options = ['Name', 'Draft Year', 'Height', 'Weight', '40-Yard Dash', 'Vertical Jump', 'Broad Jump', 'Bench Press']
-        sort_by = st.selectbox("Sort by:", sort_options)
-    
-    # Apply filters and show results
-    if st.button("🔍 Apply Filters"):
-        # Get filtered players
-        if selected_position != 'All Positions':
-            filtered_players = player_data.get_player_names(selected_position)
-        else:
-            filtered_players = player_data.get_player_names()
-        
-        # Filter by year if selected
-        if selected_year != 'All Years':
-            all_players_data = player_data.get_players_by_position()
-            year_filtered = all_players_data[all_players_data['draft_year'] == selected_year]
-            filtered_players = [name for name in filtered_players if name in year_filtered['name'].values]
-        
-        # Sort players
-        if sort_by != 'Name':
-            # Get player data for sorting
-            players_data = []
-            for name in filtered_players:
-                stats = player_data.get_player_stats(name)
-                if stats:
-                    players_data.append(stats)
+    # Display selected player and similar players
+    if selected_player:
+        # Get player stats
+        player_stats = player_data.get_player_stats(selected_player)
+        if player_stats:
+            # Find similar players
+            with st.spinner("Finding similar players..."):
+                similar_players = analyzer.find_similar_players(
+                    selected_player, 
+                    num_similar=2, 
+                    same_position_only=True
+                )
             
-            if players_data:
-                df = pd.DataFrame(players_data)
+            if similar_players:
+                # Create side-by-side layout
+                st.markdown("### 📊 Player Comparison")
                 
-                # Map sort options to column names
-                sort_mapping = {
-                    'Draft Year': 'draft_year',
-                    'Height': 'height',
-                    'Weight': 'weight',
-                    '40-Yard Dash': 'forty_yard',
-                    'Vertical Jump': 'vertical_jump',
-                    'Broad Jump': 'broad_jump',
-                    'Bench Press': 'bench_press'
-                }
+                # Create three columns for the layout
+                col1, col2, col3 = st.columns(3)
                 
-                if sort_by in sort_mapping:
-                    sort_column = sort_mapping[sort_by]
-                    if sort_column in df.columns:
-                        df = df.sort_values(sort_column, na_last=True)
-                        filtered_players = df['name'].tolist()
-        
-        # Display filtered results
-        st.markdown(f"### 📋 Filtered Results ({len(filtered_players)} players)")
-        
-        # Show first 20 results with pagination
-        if filtered_players:
-            page_size = 20
-            total_pages = (len(filtered_players) + page_size - 1) // page_size
-            
-            if total_pages > 1:
-                page = st.selectbox("Page:", range(1, total_pages + 1)) - 1
+                # Selected player in left column
+                with col1:
+                    st.markdown('<div class="similarity-score">Selected Player</div>', unsafe_allow_html=True)
+                    display_player_card(player_stats, "Selected", selected_player, "selected")
+                
+                # Similar players in right columns
+                for i, similar in enumerate(similar_players):
+                    if i == 0:
+                        col = col2
+                    else:
+                        col = col3
+                    
+                    with col:
+                        similarity_percent = similar['similarity_score'] * 100
+                        st.markdown(f'<div class="similarity-score">{similarity_percent:.1f}% Similar</div>', unsafe_allow_html=True)
+                        display_player_card(similar['stats'], f"Similar Player {i+1}", similar['name'], "similar")
             else:
-                page = 0
-            
-            start_idx = page * page_size
-            end_idx = min(start_idx + page_size, len(filtered_players))
-            page_players = filtered_players[start_idx:end_idx]
-            
-            # Display players in a grid
-            cols = st.columns(4)
-            for i, player_name in enumerate(page_players):
-                col_idx = i % 4
-                with cols[col_idx]:
-                    if st.button(f"📊 {player_name}", key=f"player_{i}"):
-                        # Set the selected player for the main search
-                        st.session_state.selected_player = player_name
-                        st.rerun()
-            
-            if total_pages > 1:
-                st.markdown(f"Showing {start_idx + 1}-{end_idx} of {len(filtered_players)} players")
+                st.warning("No similar players found with the current criteria.")
         else:
-            st.info("No players match the selected filters.")
+            st.error("Could not load player statistics.")
     
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Footer
-    st.markdown("---")
-    st.markdown("""
-    <div style='text-align: center; color: #666; padding: 1rem;'>
-        <p>🏈 NFL Player Comparison Tool | Data: 2000-2025 NFL Combine Results</p>
-        <p>Built with Streamlit • Powered by Machine Learning Similarity Analysis</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Advanced search section (collapsible)
+    with st.expander("🔧 Advanced Search & Filters", expanded=False):
+        st.markdown('<div class="filter-section">', unsafe_allow_html=True)
+        
+        # Create filter columns
+        filter_col1, filter_col2, filter_col3 = st.columns(3)
+        
+        with filter_col1:
+            # Draft year filter
+            years = ['All Years'] + [str(year) for year in range(2025, 1999, -1)]
+            filter_year = st.selectbox("Draft Year:", years)
+            
+            # Height filter
+            height_range = st.slider("Height Range (inches):", 60, 85, (70, 75))
+        
+        with filter_col2:
+            # Weight filter
+            weight_range = st.slider("Weight Range (lbs):", 150, 400, (200, 250))
+            
+            # 40-yard dash filter
+            forty_range = st.slider("40-Yard Dash (seconds):", 4.0, 6.0, (4.5, 5.0), 0.1)
+        
+        with filter_col3:
+            # Sort options
+            sort_options = ['Name', 'Draft Year', 'Height', 'Weight', '40-Yard Dash', 'Vertical Jump']
+            sort_by = st.selectbox("Sort by:", sort_options)
+            
+            # Sort direction
+            sort_direction = st.selectbox("Sort direction:", ['Ascending', 'Descending'])
+        
+        # Apply advanced filters
+        if st.button("🔍 Apply Advanced Filters"):
+            # Filter players based on advanced criteria
+            filtered_players = []
+            
+            for player_name in all_players:
+                stats = player_data.get_player_stats(player_name)
+                if not stats:
+                    continue
+                
+                # Apply filters
+                if filter_year != 'All Years' and str(stats.get('draft_year', '')) != filter_year:
+                    continue
+                
+                height = stats.get('height')
+                if height and (height < height_range[0] or height > height_range[1]):
+                    continue
+                
+                weight = stats.get('weight')
+                if weight and (weight < weight_range[0] or weight > weight_range[1]):
+                    continue
+                
+                forty = stats.get('forty_yard')
+                if forty and (forty < forty_range[0] or forty > forty_range[1]):
+                    continue
+                
+                filtered_players.append((player_name, stats))
+            
+            # Sort results
+            if sort_by == 'Name':
+                filtered_players.sort(key=lambda x: x[0])
+            elif sort_by == 'Draft Year':
+                filtered_players.sort(key=lambda x: x[1].get('draft_year', 0))
+            elif sort_by == 'Height':
+                filtered_players.sort(key=lambda x: x[1].get('height', 0))
+            elif sort_by == 'Weight':
+                filtered_players.sort(key=lambda x: x[1].get('weight', 0))
+            elif sort_by == '40-Yard Dash':
+                filtered_players.sort(key=lambda x: x[1].get('forty_yard', 10))
+            elif sort_by == 'Vertical Jump':
+                filtered_players.sort(key=lambda x: x[1].get('vertical_jump', 0))
+            
+            if sort_direction == 'Descending':
+                filtered_players.reverse()
+            
+            # Display filtered results
+            if filtered_players:
+                st.markdown("### 📋 Filtered Results")
+                st.markdown(f"Found **{len(filtered_players)}** players matching your criteria")
+                
+                # Display results in a grid
+                results_per_row = 3
+                for i in range(0, min(len(filtered_players), 9), results_per_row):  # Show max 9 results
+                    cols = st.columns(results_per_row)
+                    for j, (player_name, stats) in enumerate(filtered_players[i:i+results_per_row]):
+                        with cols[j]:
+                            if st.button(f"Select {player_name}", key=f"filter_{i}_{j}"):
+                                st.session_state.selected_player = player_name
+                                st.rerun()
+                            display_player_card(stats, "Player", player_name)
+            else:
+                st.warning("No players found matching your advanced filter criteria.")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main() 
