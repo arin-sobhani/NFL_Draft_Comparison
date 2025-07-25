@@ -240,40 +240,24 @@ def main():
     all_players = player_data.get_player_names()
     all_players.sort()
     
-    # Create columns for search and filters
-    col1, col2 = st.columns([2, 1])
+    # Single search bar with autocomplete-like functionality
+    search_term = st.text_input("Enter player name:", placeholder="e.g., Caleb Williams, Travis Hunter...")
     
-    with col1:
-        # Search bar with autocomplete-like functionality
-        search_term = st.text_input("Enter player name:", placeholder="e.g., Caleb Williams, Travis Hunter...")
-    
-    with col2:
-        # Quick position filter
-        positions = ['All Positions'] + sorted(player_data.get_all_positions())
-        selected_position = st.selectbox("Position:", positions)
-    
-    # Filter players based on search term and position
+    # Filter players based on search term
     if search_term:
         filtered_players = [name for name in all_players if search_term.lower() in name.lower()]
+        # Limit results for better performance
+        if len(filtered_players) > 50:
+            filtered_players = filtered_players[:50]
     else:
-        filtered_players = all_players
+        filtered_players = all_players[:20]  # Show first 20 players when no search term
     
-    # Apply position filter
-    if selected_position != 'All Positions':
-        filtered_players = [name for name in filtered_players 
-                          if player_data.get_player_stats(name) and 
-                          player_data.get_player_stats(name)['position'] == selected_position]
-    
-    # Limit results for dropdown
-    if len(filtered_players) > 100:
-        filtered_players = filtered_players[:100]
-    
-    # Player selection
+    # Player selection dropdown
     if filtered_players:
-        selected_player = st.selectbox("Select a player:", filtered_players, index=0 if not search_term else None)
+        selected_player = st.selectbox("Select a player:", filtered_players, index=0)
     else:
         selected_player = None
-        st.warning("No players found matching your criteria.")
+        st.warning("No players found matching your search.")
     
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -326,27 +310,31 @@ def main():
         filter_col1, filter_col2, filter_col3 = st.columns(3)
         
         with filter_col1:
+            # Position filter
+            positions = ['All Positions'] + sorted(player_data.get_all_positions())
+            filter_position = st.selectbox("Position:", positions)
+            
             # Draft year filter
             years = ['All Years'] + [str(year) for year in range(2025, 1999, -1)]
             filter_year = st.selectbox("Draft Year:", years)
-            
-            # Height filter
-            height_range = st.slider("Height Range (inches):", 60, 85, (70, 75))
         
         with filter_col2:
+            # Height filter
+            height_range = st.slider("Height Range (inches):", 60, 85, (70, 75))
+            
             # Weight filter
             weight_range = st.slider("Weight Range (lbs):", 150, 400, (200, 250))
-            
-            # 40-yard dash filter
-            forty_range = st.slider("40-Yard Dash (seconds):", 4.0, 6.0, (4.5, 5.0), 0.1)
         
         with filter_col3:
+            # 40-yard dash filter
+            forty_range = st.slider("40-Yard Dash (seconds):", 4.0, 6.0, (4.5, 5.0), 0.1)
+            
             # Sort options
             sort_options = ['Name', 'Draft Year', 'Height', 'Weight', '40-Yard Dash', 'Vertical Jump']
             sort_by = st.selectbox("Sort by:", sort_options)
-            
-            # Sort direction
-            sort_direction = st.selectbox("Sort direction:", ['Ascending', 'Descending'])
+        
+        # Sort direction
+        sort_direction = st.selectbox("Sort direction:", ['Ascending', 'Descending'])
         
         # Apply advanced filters
         if st.button("🔍 Apply Advanced Filters"):
@@ -359,6 +347,9 @@ def main():
                     continue
                 
                 # Apply filters
+                if filter_position != 'All Positions' and stats.get('position') != filter_position:
+                    continue
+                
                 if filter_year != 'All Years' and str(stats.get('draft_year', '')) != filter_year:
                     continue
                 
