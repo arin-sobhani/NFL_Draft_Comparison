@@ -164,7 +164,7 @@ class NFLDataProcessor:
             inches = int(match.group(2))
             return feet * 12 + inches
         
-        # Handle Excel date format (e.g., "4-Jun" = 6'4", "11-May" = 5'11")
+        # Handle Excel date format (e.g., "4-Jun" = 4'6", "11-May" = 5'11")
         excel_pattern = r'(\d+)-([A-Za-z]+)'
         match = re.search(excel_pattern, height_str)
         if match:
@@ -178,6 +178,8 @@ class NFLDataProcessor:
             if month in month_to_feet:
                 feet = month_to_feet[month]
                 inches = day
+                # Fix: The day should be inches, month should be feet
+                # But Excel format is actually "day-month" where day=inches, month=feet
                 return feet * 12 + inches
         
         return None
