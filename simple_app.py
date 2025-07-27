@@ -181,8 +181,8 @@ def format_player_name(name):
         return "Unknown Player"
     return name.title()
 
-def display_player_card(player_data, title="Player", player_name=None, card_type="default", player_metadata=None):
-    """Display a player card with stats"""
+def display_player_card(player_data, title="Player", player_name=None, card_type="default", player_metadata=None, analyzer=None):
+    """Display a player card with stats and percentiles"""
     # Handle different data structures
     if player_name is None:
         player_name = player_data.get('name', 'Unknown Player')
@@ -197,14 +197,33 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
         college = player_data.get('college', 'N/A')
         draft_year = player_data.get('draft_year', 'N/A')
     
+    # Get percentiles if analyzer is provided
+    percentiles = {}
+    ras_score = None
+    if analyzer and player_name != 'Unknown Player':
+        try:
+            percentiles = analyzer.get_player_percentiles(player_name, position)
+            ras_score = analyzer.get_ras_score(player_name, position)
+        except:
+            pass
+    
     card_class = f"player-card {card_type}"
     
     st.markdown(f"""
     <div class="{card_class}">
         <div class="player-name">{format_player_name(player_name)}</div>
         <div class="player-info">{position} • {college} • {draft_year}</div>
-        <div class="stat-grid">
     """, unsafe_allow_html=True)
+    
+    # Show RAS score if available
+    if ras_score is not None:
+        st.markdown(f"""
+        <div style="background: #3b82f6; color: white; padding: 0.5rem; border-radius: 8px; text-align: center; margin-bottom: 1rem; font-weight: bold;">
+            RAS Score: {ras_score}/100
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="stat-grid">', unsafe_allow_html=True)
     
     # Display key stats
     stats_to_show = [
@@ -236,10 +255,27 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
             # Don't show unit for height since it's already in the format
             unit_display = "" if stat == 'height' else f" {unit}"
             
+            # Add percentile if available
+            percentile_display = ""
+            if stat in percentiles:
+                percentile = percentiles[stat]
+                # Color code based on percentile
+                if percentile >= 80:
+                    color = "#10b981"  # Green for high percentiles
+                elif percentile >= 60:
+                    color = "#3b82f6"  # Blue for good percentiles
+                elif percentile >= 40:
+                    color = "#f59e0b"  # Orange for average percentiles
+                else:
+                    color = "#ef4444"  # Red for low percentiles
+                
+                percentile_display = f'<div style="color: {color}; font-size: 0.8rem; font-weight: bold;">({percentile}%)</div>'
+            
             st.markdown(f"""
             <div class="stat-item">
                 <div class="stat-label">{label}</div>
                 <div class="stat-value">{display_value}{unit_display}</div>
+                {percentile_display}
             </div>
             """, unsafe_allow_html=True)
     
@@ -308,7 +344,7 @@ def main():
                 # Selected player in left column
                 with col1:
                     st.markdown('<div class="similarity-score">Selected Player</div>', unsafe_allow_html=True)
-                    display_player_card(player_stats, "Selected", selected_player, "selected")
+                    display_player_card(player_stats, "Selected", selected_player, "selected", analyzer=analyzer)
                 
                 # Similar players in right columns
                 for i, similar in enumerate(similar_players):
@@ -326,7 +362,7 @@ def main():
                             'college': similar['college'],
                             'draft_year': similar.get('draft_year', 'N/A')
                         }
-                        display_player_card(similar['stats'], f"Similar Player {i+1}", similar['name'], "similar", player_metadata)
+                        display_player_card(similar['stats'], f"Similar Player {i+1}", similar['name'], "similar", player_metadata, analyzer=analyzer)
             else:
                 st.warning("No similar players found with the current criteria.")
         else:
@@ -428,7 +464,7 @@ def main():
                             if st.button(f"Select {player_name}", key=f"filter_{i}_{j}"):
                                 st.session_state.selected_player = player_name
                                 st.rerun()
-                            display_player_card(stats, "Player", player_name)
+                            display_player_card(stats, "Player", player_name, analyzer=analyzer)
             else:
                 st.warning("No players found matching your advanced filter criteria.")
         

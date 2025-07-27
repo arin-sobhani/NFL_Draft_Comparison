@@ -4,6 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
 from typing import List, Dict, Tuple
 import warnings
+from .percentile_calculator import PercentileCalculator
 warnings.filterwarnings('ignore')
 
 class PlayerSimilarityAnalyzer:
@@ -14,6 +15,9 @@ class PlayerSimilarityAnalyzer:
             'height', 'weight', 'forty_yard', 'vertical_jump', 
             'broad_jump', 'bench_press', 'shuttle', 'cone'
         ]
+        
+        # Initialize percentile calculator
+        self.percentile_calc = PercentileCalculator(player_data.players)
         
     def _prepare_features(self, players_df: pd.DataFrame) -> np.ndarray:
         """Prepare and normalize features for similarity calculation"""
@@ -419,4 +423,21 @@ class PlayerSimilarityAnalyzer:
         if stat_comparisons:
             explanations.append("Key similarities include: " + "; ".join(stat_comparisons[:3]))
         
-        return " ".join(explanations) 
+        return " ".join(explanations)
+    
+    def get_player_percentiles(self, player_name: str, position: str = None) -> Dict[str, float]:
+        """Get position-specific percentiles for a player"""
+        return self.percentile_calc.get_player_percentiles(player_name, position)
+    
+    def get_ras_score(self, player_name: str, position: str = None) -> float:
+        """Get RAS score for a player"""
+        return self.percentile_calc.get_ras_score(player_name, position)
+    
+    def get_percentile_explanation(self, player_name: str, position: str = None) -> str:
+        """Get detailed percentile explanation for a player"""
+        return self.percentile_calc.get_percentile_explanation(player_name, position)
+    
+    def find_similar_percentile_players(self, player_name: str, position: str = None, 
+                                      num_similar: int = 5) -> List[Dict]:
+        """Find players with similar percentile profiles"""
+        return self.percentile_calc.get_similar_percentile_players(player_name, position, num_similar) 
