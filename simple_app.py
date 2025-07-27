@@ -238,7 +238,7 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
 def main():
     # Header
     st.markdown('<h1 class="main-header">🏈 NFL Player Comparison Tool</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Search and compare NFL players from 2000-2025 (Fixed & Working)</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Search and compare NFL players from 2000-2025</p>', unsafe_allow_html=True)
     
     # Load data
     player_data, analyzer = load_data()
