@@ -164,19 +164,20 @@ class NFLDataProcessor:
             inches = int(match.group(2))
             return feet * 12 + inches
         
-        # Handle Excel date format (e.g., "4-Jun" = 6'4")
+        # Handle Excel date format (e.g., "4-Jun" = 6'4", "11-May" = 5'11")
         excel_pattern = r'(\d+)-([A-Za-z]+)'
         match = re.search(excel_pattern, height_str)
         if match:
-            feet = int(match.group(1))
+            day = int(match.group(1))
             month = match.group(2).lower()
-            # Map months to inches (Jan=1, Feb=2, etc.)
-            month_to_inches = {
+            # Map months to feet (Jan=1, Feb=2, etc.)
+            month_to_feet = {
                 'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
                 'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
             }
-            if month in month_to_inches:
-                inches = month_to_inches[month]
+            if month in month_to_feet:
+                feet = month_to_feet[month]
+                inches = day
                 return feet * 12 + inches
         
         return None

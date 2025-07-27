@@ -171,15 +171,21 @@ def format_player_name(name):
         return "Unknown Player"
     return name.title()
 
-def display_player_card(player_data, title="Player", player_name=None, card_type="default"):
+def display_player_card(player_data, title="Player", player_name=None, card_type="default", player_metadata=None):
     """Display a player card with stats"""
     # Handle different data structures
     if player_name is None:
         player_name = player_data.get('name', 'Unknown Player')
     
-    position = player_data.get('position', 'N/A')
-    college = player_data.get('college', 'N/A')
-    draft_year = player_data.get('draft_year', 'N/A')
+    # Use metadata if provided (for similar players), otherwise use player_data
+    if player_metadata:
+        position = player_metadata.get('position', 'N/A')
+        college = player_metadata.get('college', 'N/A')
+        draft_year = player_metadata.get('draft_year', 'N/A')
+    else:
+        position = player_data.get('position', 'N/A')
+        college = player_data.get('college', 'N/A')
+        draft_year = player_data.get('draft_year', 'N/A')
     
     card_class = f"player-card {card_type}"
     
@@ -205,9 +211,14 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
     for label, stat, unit in stats_to_show:
         value = player_data.get(stat)
         if pd.notna(value) and value is not None:
-            if stat in ['forty_yard', 'shuttle', 'cone']:
+            if stat == 'height':
+                # Convert inches to feet/inches format
+                feet = int(value // 12)
+                inches = int(value % 12)
+                display_value = f"{feet}'{inches}\""
+            elif stat in ['forty_yard', 'shuttle', 'cone']:
                 display_value = f"{value:.2f}"
-            elif stat in ['height', 'weight', 'vertical_jump', 'broad_jump', 'bench_press']:
+            elif stat in ['weight', 'vertical_jump', 'broad_jump', 'bench_press']:
                 display_value = f"{value:.0f}"
             else:
                 display_value = str(value)
@@ -296,7 +307,13 @@ def main():
                     with col:
                         similarity_percent = similar['similarity_score'] * 100
                         st.markdown(f'<div class="similarity-score">{similarity_percent:.1f}% Similar</div>', unsafe_allow_html=True)
-                        display_player_card(similar['stats'], f"Similar Player {i+1}", similar['name'], "similar")
+                        # Pass player metadata separately for similar players
+                        player_metadata = {
+                            'position': similar['position'],
+                            'college': similar['college'],
+                            'draft_year': similar['draft_year']
+                        }
+                        display_player_card(similar['stats'], f"Similar Player {i+1}", similar['name'], "similar", player_metadata)
             else:
                 st.warning("No similar players found with the current criteria.")
         else:
