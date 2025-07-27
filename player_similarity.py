@@ -302,11 +302,18 @@ class PlayerSimilarityAnalyzer:
         # Create results
         results = []
         for i, (_, player) in enumerate(players_df.iterrows()):
+            # Debug: Check draft_year value
+            draft_year = player.get('draft_year', 'N/A')
+            if pd.isna(draft_year):
+                draft_year = 'N/A'
+            elif isinstance(draft_year, (int, float)):
+                draft_year = str(int(draft_year))
+            
             results.append({
                 'name': player['name'],
                 'position': player['position'],
                 'college': player['college'],
-                'draft_year': player.get('draft_year', 'N/A'),
+                'draft_year': draft_year,
                 'similarity_score': similarity_scores[i],
                 'data_tier': self._get_player_data_tier(player),
                 'stats': {
