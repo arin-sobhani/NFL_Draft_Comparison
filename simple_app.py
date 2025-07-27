@@ -216,6 +216,8 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
                 feet = int(value // 12)
                 inches = int(value % 12)
                 display_value = f"{feet}'{inches}\""
+                # Debug: Print height conversion
+                st.write(f"Debug - Height conversion: {value} inches = {display_value}")
             elif stat in ['forty_yard', 'shuttle', 'cone']:
                 display_value = f"{value:.2f}"
             elif stat in ['weight', 'vertical_jump', 'broad_jump', 'bench_press']:
@@ -311,6 +313,10 @@ def main():
                         similarity_percent = similar['similarity_score'] * 100
                         st.markdown(f'<div class="similarity-score">{similarity_percent:.1f}% Similar</div>', unsafe_allow_html=True)
                         # Pass player metadata separately for similar players
+                        # Debug: Print the similar player structure
+                        st.write(f"Debug - Similar player structure: {similar.keys()}")
+                        st.write(f"Debug - Draft year value: {similar.get('draft_year', 'NOT_FOUND')}")
+                        
                         player_metadata = {
                             'position': similar['position'],
                             'college': similar['college'],
