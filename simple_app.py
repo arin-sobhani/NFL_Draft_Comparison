@@ -223,10 +223,13 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
             else:
                 display_value = str(value)
             
+            # Don't show unit for height since it's already in the format
+            unit_display = "" if stat == 'height' else f" {unit}"
+            
             st.markdown(f"""
             <div class="stat-item">
                 <div class="stat-label">{label}</div>
-                <div class="stat-value">{display_value} {unit}</div>
+                <div class="stat-value">{display_value}{unit_display}</div>
             </div>
             """, unsafe_allow_html=True)
     
