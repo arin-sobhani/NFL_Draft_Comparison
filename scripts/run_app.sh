@@ -22,4 +22,4 @@ echo "🛑 Press Ctrl+C to stop the server"
 echo ""
 
 # Run the main app
-streamlit run app.py 
+streamlit run simple_app.py 
