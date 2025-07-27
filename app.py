@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from nfl_player_data import NFLPlayerData
-from player_similarity import PlayerSimilarityAnalyzer
+from src.nfl_player_data import NFLPlayerData
+from src.player_similarity import PlayerSimilarityAnalyzer
 
 # Page configuration
 st.set_page_config(

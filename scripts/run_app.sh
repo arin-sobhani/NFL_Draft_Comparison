@@ -21,5 +21,5 @@ echo "📱 Open your browser to: http://localhost:8501"
 echo "🛑 Press Ctrl+C to stop the server"
 echo ""
 
-# Run the simple app
-streamlit run simple_app.py 
+# Run the main app
+streamlit run app.py 

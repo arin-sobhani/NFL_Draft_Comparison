@@ -29,7 +29,7 @@ A web application that allows users to search and compare NFL players from 2000-
 
 3. **Run the application**
    ```bash
-   streamlit run simple_app.py
+   streamlit run app.py
    ```
 
 4. **Open your browser** to `http://localhost:8501`
@@ -49,14 +49,14 @@ A web application that allows users to search and compare NFL players from 2000-
    - Go to [share.streamlit.io](https://share.streamlit.io)
    - Sign in with GitHub
    - Click "New app"
-   - Select your repository and set the path to `simple_app.py`
+   - Select your repository and set the path to `app.py`
    - Click "Deploy"
 
 #### Option 2: Heroku
 
 1. **Create a Procfile**
    ```
-   web: streamlit run simple_app.py --server.port=$PORT --server.address=0.0.0.0
+   web: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
    ```
 
 2. **Deploy to Heroku**
@@ -68,7 +68,7 @@ A web application that allows users to search and compare NFL players from 2000-
 #### Option 3: Railway
 
 1. **Connect your GitHub repository to Railway**
-2. **Set the start command**: `streamlit run simple_app.py --server.port=$PORT --server.address=0.0.0.0`
+2. **Set the start command**: `streamlit run app.py --server.port=$PORT --server.address=0.0.0.0`
 3. **Deploy automatically**
 
 ## 📊 Data Sources
