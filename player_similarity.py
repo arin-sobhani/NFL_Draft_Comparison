@@ -309,7 +309,7 @@ class PlayerSimilarityAnalyzer:
             elif isinstance(draft_year, (int, float)):
                 draft_year = str(int(draft_year))
             
-            results.append({
+            result_dict = {
                 'name': player['name'],
                 'position': player['position'],
                 'college': player['college'],
@@ -326,7 +326,13 @@ class PlayerSimilarityAnalyzer:
                     'shuttle': player['shuttle'],
                     'cone': player['cone']
                 }
-            })
+            }
+            
+            # Debug: Print the result structure
+            print(f"DEBUG - Creating result for {player['name']}: {list(result_dict.keys())}")
+            print(f"DEBUG - Draft year value: {result_dict['draft_year']}")
+            
+            results.append(result_dict)
         
         # Sort by similarity score (highest first)
         results.sort(key=lambda x: x['similarity_score'], reverse=True)
