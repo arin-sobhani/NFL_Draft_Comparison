@@ -31,10 +31,7 @@ st.markdown("""
     }
     
     .search-container {
-        background: #f8fafc;
-        padding: 2rem;
-        border-radius: 12px;
-        border: 1px solid #e5e7eb;
+        padding: 1rem 0;
         margin-bottom: 2rem;
     }
     
