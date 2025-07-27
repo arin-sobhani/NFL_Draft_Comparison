@@ -311,7 +311,7 @@ def main():
                         player_metadata = {
                             'position': similar['position'],
                             'college': similar['college'],
-                            'draft_year': similar['draft_year']
+                            'draft_year': similar.get('draft_year', 'N/A')
                         }
                         display_player_card(similar['stats'], f"Similar Player {i+1}", similar['name'], "similar", player_metadata)
             else:
