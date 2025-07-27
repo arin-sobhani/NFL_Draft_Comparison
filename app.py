@@ -1,8 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
 import numpy as np
 from nfl_player_data import NFLPlayerData
 from player_similarity import PlayerSimilarityAnalyzer
@@ -12,351 +9,420 @@ st.set_page_config(
     page_title="NFL Player Comparison Tool",
     page_icon="🏈",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Custom CSS for better styling
 st.markdown("""
 <style>
     .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        color: #1f77b4;
         text-align: center;
+        color: #1f2937;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .sub-header {
+        text-align: center;
+        color: #6b7280;
+        font-size: 1.1rem;
         margin-bottom: 2rem;
     }
+    
+    .search-container {
+        background: #f8fafc;
+        padding: 2rem;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+    
+    .player-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
     .player-card {
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        border-left: 4px solid #1f77b4;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
     }
-    .similarity-score {
-        font-size: 1.2rem;
+    
+    .player-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .player-card.selected {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    
+    .player-card.similar {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    
+    .player-name {
+        font-size: 1.25rem;
         font-weight: bold;
-        color: #28a745;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
     }
-    .stat-comparison {
-        background-color: #e9ecef;
+    
+    .player-info {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+    
+    .stat-item {
+        background: #f9fafb;
+        padding: 0.75rem;
         border-radius: 8px;
-        padding: 0.5rem;
-        margin: 0.25rem 0;
+        text-align: center;
     }
-    .metric-container {
+    
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6b7280;
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #1f2937;
+    }
+    
+    .similarity-score {
+        background: #3b82f6;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-section {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        margin-top: 1rem;
+    }
+    
+    .filter-row {
         display: flex;
-        justify-content: space-between;
+        gap: 1rem;
         align-items: center;
-        margin: 0.5rem 0;
+        margin-bottom: 1rem;
     }
-    .metric-label {
-        font-weight: bold;
-        color: #495057;
+    
+    .filter-item {
+        flex: 1;
     }
-    .metric-value {
-        color: #1f77b4;
-        font-weight: bold;
+    
+    .no-results {
+        text-align: center;
+        color: #6b7280;
+        font-style: italic;
+        padding: 2rem;
+    }
+    
+    .stSelectbox > div > div {
+        background: white;
+    }
+    
+    .stTextInput > div > div > input {
+        background: white;
     }
 </style>
 """, unsafe_allow_html=True)
 
 @st.cache_resource
 def load_data():
-    """Load player data and analyzer"""
-    player_data = NFLPlayerData()
-    analyzer = PlayerSimilarityAnalyzer(player_data)
-    return player_data, analyzer
+    """Load player data and similarity analyzer"""
+    try:
+        player_data = NFLPlayerData()
+        analyzer = PlayerSimilarityAnalyzer(player_data)
+        return player_data, analyzer
+    except Exception as e:
+        st.error(f"Failed to load data: {str(e)}")
+        return None, None
 
-def create_radar_chart(target_player, similar_players):
-    """Create a radar chart comparing player statistics"""
-    # Prepare data for radar chart
-    categories = ['Height', 'Weight', '40-Yard', 'Vertical', 'Broad Jump', 'Bench', 'Shuttle', 'Cone']
-    
-    # Normalize values for better visualization
-    def normalize_stats(stats):
-        # Create normalized values (0-100 scale)
-        normalized = {}
-        normalized['Height'] = (stats['height'] - 65) / (85 - 65) * 100  # 65-85 inches
-        normalized['Weight'] = (stats['weight'] - 150) / (350 - 150) * 100  # 150-350 lbs
-        normalized['40-Yard'] = (5.5 - stats['forty_yard']) / (5.5 - 4.0) * 100  # 4.0-5.5 seconds (inverted)
-        normalized['Vertical'] = (stats['vertical_jump'] - 20) / (45 - 20) * 100  # 20-45 inches
-        normalized['Broad Jump'] = (stats['broad_jump'] - 90) / (140 - 90) * 100  # 90-140 inches
-        normalized['Bench'] = (stats['bench_press'] - 5) / (35 - 5) * 100  # 5-35 reps
-        normalized['Shuttle'] = (5.5 - stats['shuttle']) / (5.5 - 3.5) * 100  # 3.5-5.5 seconds (inverted)
-        normalized['Cone'] = (8.5 - stats['cone']) / (8.5 - 6.0) * 100  # 6.0-8.5 seconds (inverted)
-        return normalized
-    
-    # Create radar chart
-    fig = go.Figure()
-    
-    # Add target player
-    target_normalized = normalize_stats(target_player['stats'])
-    fig.add_trace(go.Scatterpolar(
-        r=list(target_normalized.values()),
-        theta=categories,
-        fill='toself',
-        name=target_player['name'],
-        line_color='#1f77b4',
-        fillcolor='rgba(31, 119, 180, 0.3)'
-    ))
-    
-    # Add similar players
-    colors = ['#ff7f0e', '#2ca02c', '#d62728']
-    for i, player in enumerate(similar_players[:3]):
-        player_normalized = normalize_stats(player['stats'])
-        fig.add_trace(go.Scatterpolar(
-            r=list(player_normalized.values()),
-            theta=categories,
-            fill='toself',
-            name=f"{player['name']} ({player['similarity_score']:.2f})",
-            line_color=colors[i],
-            fillcolor=f'rgba{tuple(int(colors[i][1:][j:j+2], 16) for j in (0, 2, 4)) + (0.2,)}'
-        ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100]
-            )),
-        showlegend=True,
-        title="Player Statistics Comparison (Normalized)",
-        height=600
-    )
-    
-    return fig
+def format_player_name(name):
+    """Format player name for display"""
+    if not name:
+        return "Unknown Player"
+    return name.title()
 
-def create_stat_comparison_chart(target_player, similar_players):
-    """Create a bar chart comparing specific statistics"""
-    stats_to_compare = ['height', 'weight', 'forty_yard', 'vertical_jump', 'broad_jump', 'bench_press']
-    stat_labels = ['Height (in)', 'Weight (lbs)', '40-Yard (s)', 'Vertical (in)', 'Broad Jump (in)', 'Bench Press (reps)']
+def display_player_card(player_data, title="Player", player_name=None, card_type="default", player_metadata=None):
+    """Display a player card with stats"""
+    # Handle different data structures
+    if player_name is None:
+        player_name = player_data.get('name', 'Unknown Player')
     
-    fig = make_subplots(
-        rows=2, cols=3,
-        subplot_titles=stat_labels,
-        specs=[[{"secondary_y": False}, {"secondary_y": False}, {"secondary_y": False}],
-               [{"secondary_y": False}, {"secondary_y": False}, {"secondary_y": False}]]
-    )
+    # Use metadata if provided (for similar players), otherwise use player_data
+    if player_metadata:
+        position = player_metadata.get('position', 'N/A')
+        college = player_metadata.get('college', 'N/A')
+        draft_year = player_metadata.get('draft_year', 'N/A')
+    else:
+        position = player_data.get('position', 'N/A')
+        college = player_data.get('college', 'N/A')
+        draft_year = player_data.get('draft_year', 'N/A')
     
-    players = [target_player] + similar_players[:3]
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+    card_class = f"player-card {card_type}"
     
-    for i, stat in enumerate(stats_to_compare):
-        row = (i // 3) + 1
-        col = (i % 3) + 1
-        
-        values = [player['stats'][stat] for player in players]
-        names = [player['name'] for player in players]
-        
-        fig.add_trace(
-            go.Bar(
-                x=names,
-                y=values,
-                marker_color=colors[:len(players)],
-                name=stat_labels[i],
-                showlegend=False
-            ),
-            row=row, col=col
-        )
+    st.markdown(f"""
+    <div class="{card_class}">
+        <div class="player-name">{format_player_name(player_name)}</div>
+        <div class="player-info">{position} • {college} • {draft_year}</div>
+        <div class="stat-grid">
+    """, unsafe_allow_html=True)
     
-    fig.update_layout(
-        height=600,
-        title_text="Statistical Comparison",
-        showlegend=False
-    )
+    # Display key stats
+    stats_to_show = [
+        ('Height', 'height', 'inches'),
+        ('Weight', 'weight', 'lbs'),
+        ('40-Yard', 'forty_yard', 'sec'),
+        ('Vertical', 'vertical_jump', 'inches'),
+        ('Broad Jump', 'broad_jump', 'inches'),
+        ('Bench', 'bench_press', 'reps'),
+        ('Shuttle', 'shuttle', 'sec'),
+        ('Cone', 'cone', 'sec')
+    ]
     
-    return fig
+    for label, stat, unit in stats_to_show:
+        value = player_data.get(stat)
+        if pd.notna(value) and value is not None:
+            if stat == 'height':
+                # Convert inches to feet/inches format
+                feet = int(value // 12)
+                inches = int(value % 12)
+                display_value = f"{feet}'{inches}\""
+            elif stat in ['forty_yard', 'shuttle', 'cone']:
+                display_value = f"{value:.2f}"
+            elif stat in ['weight', 'vertical_jump', 'broad_jump', 'bench_press']:
+                display_value = f"{value:.0f}"
+            else:
+                display_value = str(value)
+            
+            # Don't show unit for height since it's already in the format
+            unit_display = "" if stat == 'height' else f" {unit}"
+            
+            st.markdown(f"""
+            <div class="stat-item">
+                <div class="stat-label">{label}</div>
+                <div class="stat-value">{display_value}{unit_display}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
 def main():
-    # Load data
-    player_data, analyzer = load_data()
-    
     # Header
     st.markdown('<h1 class="main-header">🏈 NFL Player Comparison Tool</h1>', unsafe_allow_html=True)
-    st.markdown("### Find the most similar NFL draft prospects based on combine statistics")
+    st.markdown('<p class="sub-header">Search and compare NFL players from 2000-2025 (Working Version)</p>', unsafe_allow_html=True)
     
-    # Sidebar for player selection
-    st.sidebar.header("Player Selection")
+    # Load data
+    player_data, analyzer = load_data()
+    if player_data is None:
+        st.error("Failed to load player data. Please check your data files.")
+        return
     
-    # Position filter
-    positions = player_data.get_all_positions()
-    selected_position = st.sidebar.selectbox(
-        "Filter by Position:",
-        ["All Positions"] + positions
-    )
+    # Main search section
+    st.markdown('<div class="search-container">', unsafe_allow_html=True)
+    st.markdown("### 🔍 Search for a Player")
     
-    # Player selection
-    if selected_position == "All Positions":
-        player_names = player_data.get_player_names()
+    # Get all player names for search
+    all_players = player_data.get_player_names()
+    all_players.sort()
+    
+    # Single autocomplete search bar
+    search_term = st.text_input("Search players:", placeholder="Type a player name (e.g., Caleb Williams, Travis Hunter...)")
+    
+    # Filter players based on search term
+    if search_term:
+        filtered_players = [name for name in all_players if search_term.lower() in name.lower()]
+        # Limit results for better performance
+        if len(filtered_players) > 50:
+            filtered_players = filtered_players[:50]
     else:
-        player_names = player_data.get_player_names(selected_position)
+        filtered_players = all_players[:20]  # Show first 20 players when no search term
     
-    selected_player = st.sidebar.selectbox(
-        "Select a Player:",
-        player_names,
-        index=0
-    )
+    # Player selection from filtered results
+    if filtered_players:
+        selected_player = st.selectbox("Select from results:", filtered_players, index=0, label_visibility="collapsed")
+    else:
+        selected_player = None
+        st.warning("No players found matching your search.")
     
-    # Check if selected player has dual positions
-    player_positions = player_data.get_player_positions(selected_player)
-    analysis_position = selected_position
+    st.markdown("</div>", unsafe_allow_html=True)
     
-    if len(player_positions) > 1:
-        st.sidebar.info(f"🔄 **{selected_player}** has multiple positions: {', '.join(player_positions)}")
-        analysis_position = st.sidebar.selectbox(
-            "Analyze as which position?",
-            player_positions,
-            help="Choose which position to use for comparison analysis"
-        )
-    
-    # Analysis options
-    st.sidebar.header("Analysis Options")
-    num_similar = st.sidebar.slider("Number of similar players:", 2, 5, 3)
-    st.sidebar.markdown("### 🔒 Comparison Settings")
-    same_position_only = st.sidebar.checkbox(
-        "Compare within same position only (Recommended)", 
-        value=True,
-        help="Only compare players within the same position for meaningful results. Cross-position comparisons may not be accurate due to different physical requirements."
-    )
-    
-    # Main content
+    # Display selected player and similar players
     if selected_player:
         # Get player stats
         player_stats = player_data.get_player_stats(selected_player)
-        
-        # Display selected player info
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            st.markdown(f"""
-            <div class="player-card">
-                <h3>{player_stats['name']}</h3>
-                <p><strong>Position:</strong> {player_stats['position']}</p>
-                <p><strong>College:</strong> {player_stats['college']}</p>
-                <p><strong>Draft Year:</strong> {player_stats['draft_year']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            # Player statistics
-            st.subheader("Player Statistics")
-            stats_col1, stats_col2 = st.columns(2)
+        if player_stats:
+            # Find similar players
+            with st.spinner("Finding similar players..."):
+                similar_players = analyzer.find_similar_players(
+                    selected_player, 
+                    num_similar=2, 
+                    same_position_only=True
+                )
             
-            with stats_col1:
-                st.metric("Height", f"{player_stats['height']}\"")
-                st.metric("Weight", f"{player_stats['weight']} lbs")
-                st.metric("40-Yard Dash", f"{player_stats['forty_yard']}s")
-                st.metric("Vertical Jump", f"{player_stats['vertical_jump']}\"")
-            
-            with stats_col2:
-                st.metric("Broad Jump", f"{player_stats['broad_jump']}\"")
-                st.metric("Bench Press", f"{player_stats['bench_press']} reps")
-                st.metric("Shuttle", f"{player_stats['shuttle']}s")
-                st.metric("3-Cone", f"{player_stats['cone']}s")
-        
-        # Find similar players
-        st.markdown("---")
-        st.subheader("🔍 Similar Players Analysis")
-        
-        similar_players = analyzer.find_similar_players(
-            selected_player, 
-            num_similar=num_similar,
-            same_position_only=same_position_only,
-            position=analysis_position if len(player_positions) > 1 else None
-        )
-        
-        if similar_players:
-            # Display similar players
-            st.markdown("### Most Similar Players")
-            
-            for i, player in enumerate(similar_players):
-                col1, col2, col3 = st.columns([2, 1, 3])
+            if similar_players:
+                # Create side-by-side layout
+                st.markdown("### 📊 Player Comparison")
                 
+                # Create three columns for the layout
+                col1, col2, col3 = st.columns(3)
+                
+                # Selected player in left column
                 with col1:
-                    # Determine data tier label
-                    tier = player.get('data_tier', 1)
-                    if tier == 1:
-                        tier_label = "🟢 Complete Data"
-                    elif tier == 2:
-                        tier_label = "🟡 Partial Data"
+                    st.markdown('<div class="similarity-score">Selected Player</div>', unsafe_allow_html=True)
+                    display_player_card(player_stats, "Selected", selected_player, "selected")
+                
+                # Similar players in right columns
+                for i, similar in enumerate(similar_players):
+                    if i == 0:
+                        col = col2
                     else:
-                        tier_label = "🔴 Height/Weight Only"
+                        col = col3
                     
-                    st.markdown(f"""
-                    <div class="player-card">
-                        <h4>{player['name']}</h4>
-                        <p><strong>Position:</strong> {player['position']}</p>
-                        <p><strong>College:</strong> {player['college']}</p>
-                        <p><strong>Data Quality:</strong> {tier_label}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    st.markdown(f"""
-                    <div class="similarity-score">
-                        {player['similarity_score']:.3f}
-                    </div>
-                    <p style="text-align: center; font-size: 0.8rem;">Similarity Score</p>
-                    """, unsafe_allow_html=True)
-                
-                with col3:
-                    explanation = analyzer.get_similarity_explanation(selected_player, player)
-                    st.markdown(f"""
-                    <div class="stat-comparison">
-                        <p><strong>Why they're similar:</strong></p>
-                        <p>{explanation}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # Visualization section
-            st.markdown("---")
-            st.subheader("📊 Statistical Comparisons")
-            
-            # Create comparison summary
-            comparison_summary = analyzer.get_comparison_summary(selected_player, similar_players)
-            
-            # Radar chart
-            st.markdown("### Athletic Profile Comparison")
-            radar_fig = create_radar_chart(comparison_summary['target_player'], similar_players)
-            st.plotly_chart(radar_fig, use_container_width=True)
-            
-            # Bar chart comparison
-            st.markdown("### Individual Stat Comparison")
-            bar_fig = create_stat_comparison_chart(comparison_summary['target_player'], similar_players)
-            st.plotly_chart(bar_fig, use_container_width=True)
-            
-            # Detailed comparison table
-            st.markdown("### Detailed Statistics Comparison")
-            
-            # Create comparison dataframe
-            comparison_data = []
-            target_stats = comparison_summary['target_player']['stats']
-            
-            for stat in ['height', 'weight', 'forty_yard', 'vertical_jump', 'broad_jump', 'bench_press', 'shuttle', 'cone']:
-                row = {
-                    'Statistic': stat.replace('_', ' ').title(),
-                    f"{selected_player}": target_stats[stat]
-                }
-                
-                for player in similar_players:
-                    row[player['name']] = player['stats'][stat]
-                
-                comparison_data.append(row)
-            
-            comparison_df = pd.DataFrame(comparison_data)
-            st.dataframe(comparison_df, use_container_width=True)
-            
+                    with col:
+                        similarity_percent = similar['similarity_score'] * 100
+                        st.markdown(f'<div class="similarity-score">{similarity_percent:.1f}% Similar</div>', unsafe_allow_html=True)
+                        # Pass player metadata separately for similar players
+                        player_metadata = {
+                            'position': similar['position'],
+                            'college': similar['college'],
+                            'draft_year': similar.get('draft_year', 'N/A')
+                        }
+                        display_player_card(similar['stats'], f"Similar Player {i+1}", similar['name'], "similar", player_metadata)
+            else:
+                st.warning("No similar players found with the current criteria.")
         else:
-            st.warning("No similar players found with the current criteria.")
+            st.error("Could not load player statistics.")
     
-    # Footer
-    st.markdown("---")
-    st.markdown("""
-    <div style="text-align: center; color: #666; font-size: 0.8rem;">
-        <p>NFL Player Comparison Tool | Data includes 2024 NFL Draft prospects</p>
-        <p>Statistics based on NFL Combine and Pro Day measurements</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Advanced search section (collapsible)
+    with st.expander("🔧 Advanced Search & Filters", expanded=False):
+        st.markdown('<div class="filter-section">', unsafe_allow_html=True)
+        
+        # Create filter columns
+        filter_col1, filter_col2, filter_col3 = st.columns(3)
+        
+        with filter_col1:
+            # Position filter
+            positions = ['All Positions'] + sorted(player_data.get_all_positions())
+            filter_position = st.selectbox("Position:", positions)
+            
+            # Draft year filter
+            years = ['All Years'] + [str(year) for year in range(2025, 1999, -1)]
+            filter_year = st.selectbox("Draft Year:", years)
+        
+        with filter_col2:
+            # Height filter
+            height_range = st.slider("Height Range (inches):", 60, 85, (70, 75))
+            
+            # Weight filter
+            weight_range = st.slider("Weight Range (lbs):", 150, 400, (200, 250))
+        
+        with filter_col3:
+            # 40-yard dash filter
+            forty_range = st.slider("40-Yard Dash (seconds):", 4.0, 6.0, (4.5, 5.0), 0.1)
+            
+            # Sort options
+            sort_options = ['Name', 'Draft Year', 'Height', 'Weight', '40-Yard Dash', 'Vertical Jump']
+            sort_by = st.selectbox("Sort by:", sort_options)
+        
+        # Sort direction
+        sort_direction = st.selectbox("Sort direction:", ['Ascending', 'Descending'])
+        
+        # Apply advanced filters
+        if st.button("🔍 Apply Advanced Filters"):
+            # Filter players based on advanced criteria
+            filtered_players = []
+            
+            for player_name in all_players:
+                stats = player_data.get_player_stats(player_name)
+                if not stats:
+                    continue
+                
+                # Apply filters
+                if filter_position != 'All Positions' and stats.get('position') != filter_position:
+                    continue
+                
+                if filter_year != 'All Years' and str(stats.get('draft_year', '')) != filter_year:
+                    continue
+                
+                height = stats.get('height')
+                if height and (height < height_range[0] or height > height_range[1]):
+                    continue
+                
+                weight = stats.get('weight')
+                if weight and (weight < weight_range[0] or weight > weight_range[1]):
+                    continue
+                
+                forty = stats.get('forty_yard')
+                if forty and (forty < forty_range[0] or forty > forty_range[1]):
+                    continue
+                
+                filtered_players.append((player_name, stats))
+            
+            # Sort results
+            if sort_by == 'Name':
+                filtered_players.sort(key=lambda x: x[0])
+            elif sort_by == 'Draft Year':
+                filtered_players.sort(key=lambda x: x[1].get('draft_year', 0))
+            elif sort_by == 'Height':
+                filtered_players.sort(key=lambda x: x[1].get('height', 0))
+            elif sort_by == 'Weight':
+                filtered_players.sort(key=lambda x: x[1].get('weight', 0))
+            elif sort_by == '40-Yard Dash':
+                filtered_players.sort(key=lambda x: x[1].get('forty_yard', 10))
+            elif sort_by == 'Vertical Jump':
+                filtered_players.sort(key=lambda x: x[1].get('vertical_jump', 0))
+            
+            if sort_direction == 'Descending':
+                filtered_players.reverse()
+            
+            # Display filtered results
+            if filtered_players:
+                st.markdown("### 📋 Filtered Results")
+                st.markdown(f"Found **{len(filtered_players)}** players matching your criteria")
+                
+                # Display results in a grid
+                results_per_row = 3
+                for i in range(0, min(len(filtered_players), 9), results_per_row):  # Show max 9 results
+                    cols = st.columns(results_per_row)
+                    for j, (player_name, stats) in enumerate(filtered_players[i:i+results_per_row]):
+                        with cols[j]:
+                            if st.button(f"Select {player_name}", key=f"filter_{i}_{j}"):
+                                st.session_state.selected_player = player_name
+                                st.rerun()
+                            display_player_card(stats, "Player", player_name)
+            else:
+                st.warning("No players found matching your advanced filter criteria.")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main() 
