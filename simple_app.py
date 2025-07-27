@@ -15,19 +15,32 @@ st.set_page_config(
 # Custom CSS for better styling
 st.markdown("""
 <style>
+    /* Reduce default Streamlit padding */
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    /* Reduce spacing around headers */
+    .main h1, .main h2, .main h3 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+    }
     .main-header {
         text-align: center;
         color: #1f2937;
         font-size: 2.5rem;
         font-weight: bold;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
+        margin-top: 0;
     }
     
     .sub-header {
         text-align: center;
         color: #6b7280;
         font-size: 1.1rem;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
+        margin-top: 0;
     }
     
     .search-container {
