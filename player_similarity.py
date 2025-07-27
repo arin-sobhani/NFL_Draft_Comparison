@@ -303,7 +303,7 @@ class PlayerSimilarityAnalyzer:
         results = []
         for i, (_, player) in enumerate(players_df.iterrows()):
             # Debug: Check draft_year value
-            draft_year = player.get('draft_year', 'N/A')
+            draft_year = player['draft_year'] if 'draft_year' in player else 'N/A'
             if pd.isna(draft_year):
                 draft_year = 'N/A'
             elif isinstance(draft_year, (int, float)):
@@ -328,9 +328,7 @@ class PlayerSimilarityAnalyzer:
                 }
             }
             
-            # Debug: Print the result structure
-            print(f"DEBUG - Creating result for {player['name']}: {list(result_dict.keys())}")
-            print(f"DEBUG - Draft year value: {result_dict['draft_year']}")
+
             
             results.append(result_dict)
         
