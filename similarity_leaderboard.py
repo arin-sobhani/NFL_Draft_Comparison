@@ -163,8 +163,7 @@ def main():
     # Back to main app button
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("🏈 Back to Player Comparison", type="secondary", use_container_width=True):
-            st.switch_page("simple_app.py")
+        st.link_button("🏈 Back to Player Comparison", "https://nfldraftcomparison.streamlit.app/", type="secondary", use_container_width=True)
     
     # Load data
     player_data, analyzer = load_data()
