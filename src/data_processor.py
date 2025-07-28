@@ -45,8 +45,8 @@ class NFLDataProcessor:
             print(f"❌ Data folder '{self.data_folder}' not found!")
             return pd.DataFrame()
         
-        # Look for files with pattern 20XXDraftClass.csv
-        csv_files = [f for f in os.listdir(self.data_folder) if f.endswith('DraftClass.csv')]
+        # Look for files with pattern 20XXCombineData.csv or 20XXDraftClass.csv
+        csv_files = [f for f in os.listdir(self.data_folder) if f.endswith('CombineData.csv') or f.endswith('DraftClass.csv')]
         
         if not csv_files:
             print(f"❌ No DraftClass CSV files found in '{self.data_folder}'")
@@ -57,8 +57,8 @@ class NFLDataProcessor:
         for csv_file in sorted(csv_files):
             file_path = os.path.join(self.data_folder, csv_file)
             try:
-                # Extract year from filename (e.g., "2024DraftClass.csv" -> 2024)
-                year_match = re.search(r'(\d{4})DraftClass\.csv', csv_file)
+                # Extract year from filename (e.g., "2024DraftClass.csv" or "2024CombineData.csv" -> 2024)
+                year_match = re.search(r'(\d{4})(?:DraftClass|CombineData)\.csv', csv_file)
                 if year_match:
                     year = int(year_match.group(1))
                 else:
