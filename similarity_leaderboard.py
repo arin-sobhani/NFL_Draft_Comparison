@@ -160,6 +160,12 @@ def main():
     st.markdown('<h1 class="main-header">🏆 NFL Player Similarity Leaderboard</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Discover the most similar NFL prospects based on combine statistics</p>', unsafe_allow_html=True)
     
+    # Back to main app button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🏈 Back to Player Comparison", type="secondary", use_container_width=True):
+            st.switch_page("simple_app.py")
+    
     # Load data
     player_data, analyzer = load_data()
     if player_data is None:
