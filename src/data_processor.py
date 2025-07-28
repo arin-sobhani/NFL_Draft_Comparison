@@ -113,6 +113,22 @@ class NFLDataProcessor:
             'Shuttle': 'shuttle'
         })
         
+        # Special handling for 2001CombineData.csv format
+        # Check if we have the problematic height column (dates) and the correct height column
+        if 'Ht' in df.columns and len(df.columns) > 6:
+            # Look for the actual height column (should be the 6th column, index 5)
+            height_col_idx = 5
+            if height_col_idx < len(df.columns):
+                actual_height_col = df.columns[height_col_idx]
+                # If this column contains heights like "5-11", "6-0", etc., use it instead
+                sample_values = df[actual_height_col].dropna().head(10)
+                if any(str(val).count('-') == 1 and str(val).replace('-', '').isdigit() for val in sample_values):
+                    # This is the correct height column
+                    column_mapping[actual_height_col] = 'height'
+                    # Remove the old Ht mapping
+                    if 'Ht' in column_mapping:
+                        del column_mapping['Ht']
+        
         # Rename columns
         if column_mapping:
             df = df.rename(columns=column_mapping)
@@ -156,7 +172,7 @@ class NFLDataProcessor:
         if height_str.replace('.', '').isdigit():
             return float(height_str)
         
-        # Format: 6'2" or 6'2 or 6-2
+        # Format: 6'2" or 6'2 or 6-2 or 6-0
         feet_inches_pattern = r'(\d+)[\'\-](\d+)'
         match = re.search(feet_inches_pattern, height_str)
         if match:
