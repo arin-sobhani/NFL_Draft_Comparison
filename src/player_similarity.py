@@ -318,6 +318,7 @@ class PlayerSimilarityAnalyzer:
                 'position': player['position'],
                 'college': player['college'],
                 'draft_year': draft_year,
+                'Drafted (tm/rnd/yr)': player.get('Drafted (tm/rnd/yr)', ''),
                 'similarity_score': similarity_scores[i],
                 'data_tier': self._get_player_data_tier(player),
                 'stats': {

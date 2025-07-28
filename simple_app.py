@@ -201,7 +201,7 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
     
     # Format draft year with team information
     draft_display = str(draft_year) if draft_year != 'N/A' else 'N/A'
-    if draft_info and draft_info.strip():
+    if draft_info and isinstance(draft_info, str) and draft_info.strip():
         if 'Undrafted' in draft_info or draft_info.strip() == '':
             draft_display += ' (Undrafted)'
         else:
@@ -233,9 +233,6 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
         <div style="background: #3b82f6; color: white; padding: 0.5rem; border-radius: 8px; text-align: center; margin: 1rem 0; font-weight: bold;">
             Athlete Score: {ras_score}/100
         </div>
-        <div style="text-align: center; color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
-            Percentiles are position-specific
-        </div>
         """, unsafe_allow_html=True)
     
     st.markdown('<div class="stat-grid">', unsafe_allow_html=True)
@@ -255,7 +252,7 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
     for label, stat, unit in stats_to_show:
         value = player_data.get(stat)
         
-        if pd.notna(value) and value is not None:
+        if pd.notna(value) and value is not None and value != '' and (isinstance(value, (int, float)) or str(value).replace('.', '').replace('-', '').isdigit()):
             # Player has this stat
             if stat == 'height':
                 # Convert inches to feet/inches format
@@ -478,23 +475,26 @@ def main():
             
             # Display filtered results
             if filtered_players:
-                st.markdown("### 📋 Filtered Results")
-                st.markdown(f"Found **{len(filtered_players)}** players matching your criteria")
+                st.markdown("### 📊 Filtered Results")
+                st.markdown(f"Found **{len(filtered_players)}** players matching your criteria.")
                 
                 # Display results in a grid
-                results_per_row = 3
-                for i in range(0, min(len(filtered_players), 9), results_per_row):  # Show max 9 results
-                    cols = st.columns(results_per_row)
-                    for j, (player_name, stats) in enumerate(filtered_players[i:i+results_per_row]):
-                        with cols[j]:
-                            if st.button(f"Select {player_name}", key=f"filter_{i}_{j}"):
-                                st.session_state.selected_player = player_name
-                                st.rerun()
-                            display_player_card(stats, "Player", player_name, analyzer=analyzer)
+                cols = st.columns(3)
+                for i, (player_name, stats) in enumerate(filtered_players[:30]):  # Limit to 30 results
+                    with cols[i % 3]:
+                        if st.button(f"📋 {player_name}", key=f"filtered_{i}"):
+                            st.session_state.selected_player = player_name
+                            st.rerun()
+                        display_player_card(stats, "Player", player_name, analyzer=analyzer)
             else:
                 st.warning("No players found matching your advanced filter criteria.")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Add percentile explanation below advanced search
+    st.markdown("""
+    <div style="text-align: center; color: #6b7280; font-size: 0.9rem; margin: 1rem 0; padding: 0.5rem; background: #f9fafb; border-radius: 8px;">
+        📊 Percentiles are position-specific comparisons
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main() 
