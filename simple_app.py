@@ -202,12 +202,12 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
     # Format draft year with team information
     draft_display = str(draft_year) if draft_year != 'N/A' else 'N/A'
     if draft_info and isinstance(draft_info, str) and draft_info.strip():
-        if 'Undrafted' in draft_info or draft_info.strip() == '':
-            draft_display += ' (Undrafted)'
-        else:
-            # Extract team name from draft info (format: "Team Name / Round / Pick / Year")
-            team_part = draft_info.split(' / ')[0] if ' / ' in draft_info else draft_info
-            draft_display += f' ({team_part})'
+        # Extract team name from draft info (format: "Team Name / Round / Pick / Year")
+        team_part = draft_info.split(' / ')[0] if ' / ' in draft_info else draft_info
+        draft_display += f' ({team_part})'
+    elif draft_year != 'N/A':
+        # If we have a draft year but no draft info, they're likely undrafted
+        draft_display += ' (Undrafted)'
     
     # Get percentiles if analyzer is provided
     percentiles = {}
@@ -252,7 +252,7 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
     for label, stat, unit in stats_to_show:
         value = player_data.get(stat)
         
-        if pd.notna(value) and value is not None and value != '' and (isinstance(value, (int, float)) or str(value).replace('.', '').replace('-', '').isdigit()):
+        if pd.notna(value) and value is not None and value != '':
             # Player has this stat
             if stat == 'height':
                 # Convert inches to feet/inches format
