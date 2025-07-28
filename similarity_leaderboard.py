@@ -163,7 +163,7 @@ def main():
     # Back to main app button
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.link_button("🏈 Back to Player Comparison", "https://nfldraftcomparison.streamlit.app/", type="secondary", use_container_width=True)
+        st.link_button("🏈 Back to Player Comparison", "https://nfldraftcomparison.streamlit.app/simple_app", type="secondary", use_container_width=True)
     
     # Load data
     player_data, analyzer = load_data()
