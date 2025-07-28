@@ -26,6 +26,74 @@ class PercentileCalculator:
         # Calculate percentiles for all positions
         self._calculate_all_percentiles()
     
+    def _calculate_position_weights(self, position: str) -> Dict[str, float]:
+        """Calculate feature weights based on position importance"""
+        weights = {
+            'height': 1.0,
+            'weight': 1.0,
+            'forty_yard': 1.0,
+            'vertical_jump': 1.0,
+            'broad_jump': 1.0,
+            'bench_press': 1.0,
+            'shuttle': 1.0,
+            'cone': 1.0
+        }
+        
+        # Position-specific weight adjustments
+        if position == 'QB':
+            weights.update({
+                'forty_yard': 1.2,  # Mobility is important for QBs
+                'vertical_jump': 0.8,  # Less important for QBs
+                'bench_press': 0.7,  # Less important for QBs
+            })
+        elif position == 'WR':
+            weights.update({
+                'forty_yard': 1.5,  # Speed is crucial for WRs
+                'vertical_jump': 1.3,  # Jumping ability important
+                'broad_jump': 1.2,  # Explosiveness
+                'height': 1.1,  # Height can be advantageous
+            })
+        elif position == 'RB':
+            weights.update({
+                'forty_yard': 1.3,  # Speed important
+                'bench_press': 1.2,  # Strength for breaking tackles
+                'vertical_jump': 1.1,  # Explosiveness
+            })
+        elif position == 'TE':
+            weights.update({
+                'height': 1.3,  # Height is very important for TEs
+                'weight': 1.2,  # Size matters
+                'bench_press': 1.1,  # Strength for blocking
+            })
+        elif position in ['OT', 'OG', 'C']:
+            weights.update({
+                'height': 1.2,  # Height important for O-linemen
+                'weight': 1.3,  # Size crucial
+                'bench_press': 1.4,  # Strength very important
+                'forty_yard': 0.6,  # Speed less important
+            })
+        elif position in ['EDGE', 'DE', 'DT']:
+            weights.update({
+                'forty_yard': 1.2,  # Speed important for pass rush
+                'bench_press': 1.3,  # Strength important
+                'weight': 1.1,  # Size matters
+            })
+        elif position in ['LB', 'ILB', 'OLB']:
+            weights.update({
+                'forty_yard': 1.3,  # Speed important for coverage
+                'vertical_jump': 1.2,  # Explosiveness
+                'broad_jump': 1.1,  # Agility
+            })
+        elif position in ['CB', 'S', 'FS', 'SS']:
+            weights.update({
+                'forty_yard': 1.4,  # Speed crucial for DBs
+                'vertical_jump': 1.2,  # Jumping ability
+                'broad_jump': 1.1,  # Explosiveness
+                'height': 0.9,  # Height less important for DBs
+            })
+        
+        return weights
+    
     def _calculate_all_percentiles(self):
         """Calculate position-specific percentiles for all metrics"""
         positions = self.players_df['position'].unique()
@@ -104,23 +172,45 @@ class PercentileCalculator:
     
     def get_ras_score(self, player_name: str, position: str = None) -> float:
         """
-        Calculate RAS (Relative Athletic Score) for a player
+        Calculate weighted Athlete Score for a player using position-specific weights
         
         Args:
             player_name: Name of the player
             position: Position to use (if None, will use player's position)
             
         Returns:
-            RAS score (average of all available percentiles)
+            Weighted Athlete Score (weighted average of available percentiles)
         """
         percentiles = self.get_player_percentiles(player_name, position)
         
         if not percentiles:
             return 0.0
         
-        # Calculate average percentile (RAS score)
-        ras_score = sum(percentiles.values()) / len(percentiles)
-        return round(ras_score, 1)
+        # Get player position for weights
+        if position is None:
+            player_data = self.players_df[self.players_df['name'] == player_name]
+            if player_data.empty:
+                return 0.0
+            position = player_data.iloc[0]['position']
+        
+        # Get position-specific weights
+        weights = self._calculate_position_weights(position)
+        
+        # Calculate weighted average
+        weighted_sum = 0.0
+        total_weight = 0.0
+        
+        for metric, percentile in percentiles.items():
+            weight = weights.get(metric, 1.0)
+            weighted_sum += percentile * weight
+            total_weight += weight
+        
+        if total_weight == 0:
+            return 0.0
+        
+        # Calculate weighted Athlete Score
+        athlete_score = weighted_sum / total_weight
+        return round(athlete_score, 1)
     
     def get_percentile_explanation(self, player_name: str, position: str = None) -> str:
         """
