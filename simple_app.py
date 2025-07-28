@@ -192,10 +192,22 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
         position = player_metadata.get('position', 'N/A')
         college = player_metadata.get('college', 'N/A')
         draft_year = player_metadata.get('draft_year', 'N/A')
+        draft_info = player_metadata.get('draft_info', '')
     else:
         position = player_data.get('position', 'N/A')
         college = player_data.get('college', 'N/A')
         draft_year = player_data.get('draft_year', 'N/A')
+        draft_info = player_data.get('Drafted (tm/rnd/yr)', '')
+    
+    # Format draft year with team information
+    draft_display = str(draft_year) if draft_year != 'N/A' else 'N/A'
+    if draft_info and draft_info.strip():
+        if 'Undrafted' in draft_info or draft_info.strip() == '':
+            draft_display += ' (Undrafted)'
+        else:
+            # Extract team name from draft info (format: "Team Name / Round / Pick / Year")
+            team_part = draft_info.split(' / ')[0] if ' / ' in draft_info else draft_info
+            draft_display += f' ({team_part})'
     
     # Get percentiles if analyzer is provided
     percentiles = {}
@@ -212,14 +224,17 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
     st.markdown(f"""
     <div class="{card_class}">
         <div class="player-name">{format_player_name(player_name)}</div>
-        <div class="player-info">{position} • {college} • {draft_year}</div>
+        <div class="player-info">{position} • {college} • {draft_display}</div>
     """, unsafe_allow_html=True)
     
-    # Show RAS score if available
+    # Show Athlete Score if available
     if ras_score is not None:
         st.markdown(f"""
-        <div style="background: #3b82f6; color: white; padding: 0.5rem; border-radius: 8px; text-align: center; margin-bottom: 1rem; font-weight: bold;">
-            RAS Score: {ras_score}/100
+        <div style="background: #3b82f6; color: white; padding: 0.5rem; border-radius: 8px; text-align: center; margin: 1rem 0; font-weight: bold;">
+            Athlete Score: {ras_score}/100
+        </div>
+        <div style="text-align: center; color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+            Percentiles are position-specific
         </div>
         """, unsafe_allow_html=True)
     
@@ -360,7 +375,8 @@ def main():
                         player_metadata = {
                             'position': similar['position'],
                             'college': similar['college'],
-                            'draft_year': similar.get('draft_year', 'N/A')
+                            'draft_year': similar.get('draft_year', 'N/A'),
+                            'draft_info': similar.get('Drafted (tm/rnd/yr)', '')
                         }
                         display_player_card(similar['stats'], f"Similar Player {i+1}", similar['name'], "similar", player_metadata, analyzer=analyzer)
             else:
