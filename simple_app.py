@@ -254,7 +254,9 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
     
     for label, stat, unit in stats_to_show:
         value = player_data.get(stat)
+        
         if pd.notna(value) and value is not None:
+            # Player has this stat
             if stat == 'height':
                 # Convert inches to feet/inches format
                 feet = int(value // 12)
@@ -291,6 +293,14 @@ def display_player_card(player_data, title="Player", player_name=None, card_type
                 <div class="stat-label">{label}</div>
                 <div class="stat-value">{display_value}{unit_display}</div>
                 {percentile_display}
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            # Player is missing this stat - show "Did not participate"
+            st.markdown(f"""
+            <div class="stat-item">
+                <div class="stat-label">{label}</div>
+                <div class="stat-value" style="color: #9ca3af; font-style: italic;">Did not participate</div>
             </div>
             """, unsafe_allow_html=True)
     
