@@ -39,7 +39,7 @@ st.markdown("""
         text-align: center;
         color: #6b7280;
         font-size: 1.1rem;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.1rem;
         margin-top: 0;
     }
     
@@ -492,7 +492,8 @@ def main():
     # Add percentile explanation below advanced search
     st.markdown("""
     <div style="text-align: center; color: #6b7280; font-size: 0.9rem; margin: 1rem 0; padding: 0.5rem; background: #f9fafb; border-radius: 8px;">
-        📊 Percentiles are position-specific comparisons
+        📊 Percentiles are position-specific comparisons<br>
+        📊 Data used from Pro Football Reference
     </div>
     """, unsafe_allow_html=True)
 
