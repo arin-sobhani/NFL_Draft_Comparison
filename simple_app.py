@@ -308,10 +308,7 @@ def main():
     st.markdown('<h1 class="main-header">🏈 NFL Player Comparison Tool</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Search and compare NFL prospects combine statistics from 2000-2025</p>', unsafe_allow_html=True)
     
-    # Leaderboard button
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.link_button("🏆 View Similarity Leaderboard", "https://nfldraftcomparison.streamlit.app/similarity_leaderboard", type="secondary", use_container_width=True)
+
     
     # Load data
     player_data, analyzer = load_data()
